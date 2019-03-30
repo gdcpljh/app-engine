@@ -2,15 +2,15 @@ package com.appengine.frame.spring;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter;
-import com.appengine.frame.help.resources.ErrorHandlerResource;
+import com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter4;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.MethodParameter;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpRequest;
-import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
 /**
@@ -19,12 +19,13 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
  * Authors: sofn
  * Version: 1.0  Created at 2015-10-03 00:15.
  */
-@Service
-public class JsonResultValueHandler implements ResponseBodyAdvice {
+@Order(1)
+@ControllerAdvice(basePackages = "com.appengine")
+public class JsonResultValueHandler implements ResponseBodyAdvice<Object> {
 
     @Override
     public boolean supports(MethodParameter returnType, Class converterType) {
-        return FastJsonHttpMessageConverter.class.isAssignableFrom(converterType);
+        return FastJsonHttpMessageConverter4.class.isAssignableFrom(converterType);
     }
 
     @Override
@@ -36,9 +37,13 @@ public class JsonResultValueHandler implements ResponseBodyAdvice {
             body = new JSONObject();
         }
 
-        if (StringUtils.equals(((ServletServerHttpRequest) request).getServletRequest().getServletPath(), ErrorHandlerResource.ERROR_PATH)) {
+        if (StringUtils.equals(((ServletServerHttpRequest) request).getServletRequest().getServletPath(), "/error")) {
             result.put("apistatus", 0);
-            body = JSON.parse((String) body);
+            if (body instanceof String) {
+                body = JSON.parse((String) body);
+            } else {
+                body = JSON.parse(body.toString());
+            }
         } else {
             result.put("apistatus", 1);
         }
